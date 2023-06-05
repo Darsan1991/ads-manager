@@ -1,3 +1,19 @@
 {
-	"name": "com.dgames.adsmanager"
+    "name": "com.dgames.adsmanager",
+    "rootNamespace": "",
+    "references": [
+        "GUID:70e4d48d553de4d3badb50585b2841f0",
+        "GUID:875e1f8bac2004a2ab03595bbaa3e85a",
+        "GUID:fe25561d224ed4743af4c60938a59d0b",
+        "GUID:ff6de30450f3748908ff580f6ec64d9a"
+    ],
+    "includePlatforms": [],
+    "excludePlatforms": [],
+    "allowUnsafeCode": false,
+    "overrideReferences": false,
+    "precompiledReferences": [],
+    "autoReferenced": true,
+    "defineConstraints": [],
+    "versionDefines": [],
+    "noEngineReferences": false
 }

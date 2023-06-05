@@ -1,5 +1,8 @@
 #if UNITY_ADS_WITH_MEDITATION
 using System;
+using DGames.DDebug;
+using Unity.Services.Core;
+using Unity.Services.Mediation;
 
 
 namespace DGames.Ads
