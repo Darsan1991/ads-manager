@@ -16,7 +16,7 @@
         {
             "displayName": "Consent",
             "description": "Consent Panel",
-            "path": "Samples/Consent"
+            "path": "Samples~/Consent"
         }
         
     ]
