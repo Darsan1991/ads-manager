@@ -1,8 +1,8 @@
 {
-    "name": "com.dgames.unityessentials",
+    "name": "com.dgames.adsmanager",
     "version": "1.0.0",
-    "displayName": "Essential Package",
-    "description": "Provide basic functionality for project",
+    "displayName": "Ads Manager",
+    "description": "Provide Ads Features for game",
     "unity":"2021.3",
     "author": {
         "name": "Darsan",
