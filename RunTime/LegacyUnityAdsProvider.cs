@@ -1,7 +1,7 @@
 #if UNITY_ADS_LEGACY
 using System;
 using UnityEngine.Advertisements;
-
+namespace DGames.Ads{
 public partial class LegacyUnityAdsProvider : IAdsProvider, IUnityAdsInitializationListener
 {
     private readonly bool _debug;
@@ -195,6 +195,7 @@ public partial class LegacyUnityAdsProvider:IUnityAdsLoadListener
         else if (placementId == _interstitialId)
             OnInterstitialFailedLoad(message);
     }
+}
 }
 
 #endif

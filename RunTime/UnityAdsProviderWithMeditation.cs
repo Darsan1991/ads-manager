@@ -1,190 +1,195 @@
 #if UNITY_ADS_WITH_MEDITATION
 using System;
-using Unity.Services.Core;
-using Unity.Services.Mediation;
 
-public partial class UnityAdsProviderWithMeditation : IAdsProvider
+
+namespace DGames.Ads
 {
-    private readonly bool _debug;
-    private readonly string _interstitialId;
-    private readonly string _rewardedId;
+    public partial
 
-    private Action<bool> _rewardedVideoAdsCallback;
-
-    private IInterstitialAd _interstitialAd;
-
-    public UnityAdsProviderWithMeditation(AdsProviderSettings settings)
+    class UnityAdsProviderWithMeditation : IAdsProvider
     {
-        var unityAdsSettings = (UnityAdsSetting)settings;
+        private readonly bool _debug;
+        private readonly string _interstitialId;
+        private readonly string _rewardedId;
 
-        _interstitialId = unityAdsSettings.interstitialId;
-        _rewardedId = unityAdsSettings.rewardedId;
-        _debug = unityAdsSettings.debug;
+        private Action<bool> _rewardedVideoAdsCallback;
 
-        
-        
-        Initialize(unityAdsSettings.appId);
-    }
+        private IInterstitialAd _interstitialAd;
 
-    private async void Initialize(string appId)
-    {
-        DebugIfCan($"Unity - Start Initialization");
-
-        try
+        public UnityAdsProviderWithMeditation(AdsProviderSettings settings)
         {
-            var opt = new InitializationOptions();
-            opt.SetGameId(appId);
-            await UnityServices.InitializeAsync(opt);
-            OnInitializationComplete();
-        }
-        catch (Exception e)
-        {
-            OnInitializationFailed(e);
-        }
-    }
-    
-    public void OnInitializationComplete()
-    {
-        DebugIfCan($"Unity - Initialization Completed");
-        LoadRewarded();
-        LoadInterstitial();
-    }
+            var unityAdsSettings = (UnityAdsSetting)settings;
 
-    public void OnInitializationFailed(Exception error)
-    {
-        DebugIfCan("Initialization Failed:" + error);
-    }
+            _interstitialId = unityAdsSettings.interstitialId;
+            _rewardedId = unityAdsSettings.rewardedId;
+            _debug = unityAdsSettings.debug;
 
-    private void DebugIfCan(string message)
-    {
-        if (_debug)
-        {
-            UDebug.Debug(message);
-        }
-    }
-  
-}
 
-public partial class UnityAdsProviderWithMeditation
-{
-    private IRewardedAd _rewardedAd;
 
-    public bool IsRewardedAvailable()
-    {
-        return _rewardedAd?.AdState == AdState.Loaded;
-    }
-
-    public void ShowRewarded(Action<bool> completed = null)
-    {
-        if (!IsRewardedAvailable())
-        {
-            throw new InvalidOperationException();
+            Initialize(unityAdsSettings.appId);
         }
 
-        _rewardedVideoAdsCallback = completed;
-        _rewardedAd.ShowAsync();
-    }
-
-    private async void LoadRewarded()
-    {
-        _rewardedAd = MediationService.Instance.CreateRewardedAd(_rewardedId);
-        _rewardedAd.OnLoaded += OnRewardedAdsLoaded;
-        _rewardedAd.OnFailedLoad += OnRewardedAdsFailedLoad;
-        _rewardedAd.OnFailedShow += OnRewardedAdsFailedShow;
-        _rewardedAd.OnClosed += OnRewardedAdsClosed;
-        _rewardedAd.OnUserRewarded += OnRewardedAdsRewarded;
-        
-        try
+        private async void Initialize(string appId)
         {
-            await _rewardedAd.LoadAsync();
-        }
-        catch (LoadFailedException)
-        {
-        }
-    }
+            DebugIfCan($"Unity - Start Initialization");
 
-    private void OnRewardedAdsFailedShow(object sender, ShowErrorEventArgs e)
-    {
-        DebugIfCan($"Unity - Reward Ads Fail To Show");
-        _rewardedVideoAdsCallback?.Invoke(false);
-        _rewardedVideoAdsCallback = null;
-    }
-
-    private void OnRewardedAdsRewarded(object sender, RewardEventArgs e)
-    {
-        DebugIfCan($"Unity - Reward Ads Rewarded");
-        _rewardedVideoAdsCallback?.Invoke(true);
-        _rewardedVideoAdsCallback = null;
-    }
-
-    private void OnRewardedAdsClosed(object sender, EventArgs e)
-    {
-        DebugIfCan($"Unity - Reward Ads Closed");
-        LoadRewarded();
-    }
-    private void OnRewardedAdsLoaded(object sender, EventArgs eventArgs)
-    {
-        DebugIfCan($"Unity - Reward Ads Loaded");
-    }
-
-    private void OnRewardedAdsFailedLoad(object sender, LoadErrorEventArgs loadErrorEventArgs)
-    {
-        DebugIfCan($"Unity - Rewarded Ads Load Failed : {loadErrorEventArgs.Message}");
-        SimpleCoroutine.Create().Delay(5,LoadRewarded);
-    }
-}
-
-public partial class UnityAdsProviderWithMeditation
-{
-    
-    public bool IsInterstitialAvailable()
-    {
-        return _interstitialAd?.AdState == AdState.Loaded;
-    }
-
-
-    public void ShowInterstitial()
-    {
-        if (!IsInterstitialAvailable())
-        {
-            throw new InvalidOperationException();
+            try
+            {
+                var opt = new InitializationOptions();
+                opt.SetGameId(appId);
+                await UnityServices.InitializeAsync(opt);
+                OnInitializationComplete();
+            }
+            catch (Exception e)
+            {
+                OnInitializationFailed(e);
+            }
         }
 
-        _interstitialAd.ShowAsync();
-    }
-    
-    private async void LoadInterstitial()
-    {
-        _interstitialAd = MediationService.Instance.CreateInterstitialAd(_interstitialId);
-        _interstitialAd.OnLoaded += OnInterstitialLoaded;
-        _interstitialAd.OnFailedLoad += OnInterstitialFailedLoad;
-        _interstitialAd.OnClosed += OnInterstitialClosed;
-        try
+        public void OnInitializationComplete()
         {
-            await _interstitialAd.LoadAsync();
+            DebugIfCan($"Unity - Initialization Completed");
+            LoadRewarded();
+            LoadInterstitial();
         }
-        catch (Exception e)
+
+        public void OnInitializationFailed(Exception error)
         {
-            Console.WriteLine(e);
+            DebugIfCan("Initialization Failed:" + error);
+        }
+
+        private void DebugIfCan(string message)
+        {
+            if (_debug)
+            {
+                UDebug.Debug(message);
+            }
+        }
+
+    }
+
+    public partial class UnityAdsProviderWithMeditation
+    {
+        private IRewardedAd _rewardedAd;
+
+        public bool IsRewardedAvailable()
+        {
+            return _rewardedAd?.AdState == AdState.Loaded;
+        }
+
+        public void ShowRewarded(Action<bool> completed = null)
+        {
+            if (!IsRewardedAvailable())
+            {
+                throw new InvalidOperationException();
+            }
+
+            _rewardedVideoAdsCallback = completed;
+            _rewardedAd.ShowAsync();
+        }
+
+        private async void LoadRewarded()
+        {
+            _rewardedAd = MediationService.Instance.CreateRewardedAd(_rewardedId);
+            _rewardedAd.OnLoaded += OnRewardedAdsLoaded;
+            _rewardedAd.OnFailedLoad += OnRewardedAdsFailedLoad;
+            _rewardedAd.OnFailedShow += OnRewardedAdsFailedShow;
+            _rewardedAd.OnClosed += OnRewardedAdsClosed;
+            _rewardedAd.OnUserRewarded += OnRewardedAdsRewarded;
+
+            try
+            {
+                await _rewardedAd.LoadAsync();
+            }
+            catch (LoadFailedException)
+            {
+            }
+        }
+
+        private void OnRewardedAdsFailedShow(object sender, ShowErrorEventArgs e)
+        {
+            DebugIfCan($"Unity - Reward Ads Fail To Show");
+            _rewardedVideoAdsCallback?.Invoke(false);
+            _rewardedVideoAdsCallback = null;
+        }
+
+        private void OnRewardedAdsRewarded(object sender, RewardEventArgs e)
+        {
+            DebugIfCan($"Unity - Reward Ads Rewarded");
+            _rewardedVideoAdsCallback?.Invoke(true);
+            _rewardedVideoAdsCallback = null;
+        }
+
+        private void OnRewardedAdsClosed(object sender, EventArgs e)
+        {
+            DebugIfCan($"Unity - Reward Ads Closed");
+            LoadRewarded();
+        }
+
+        private void OnRewardedAdsLoaded(object sender, EventArgs eventArgs)
+        {
+            DebugIfCan($"Unity - Reward Ads Loaded");
+        }
+
+        private void OnRewardedAdsFailedLoad(object sender, LoadErrorEventArgs loadErrorEventArgs)
+        {
+            DebugIfCan($"Unity - Rewarded Ads Load Failed : {loadErrorEventArgs.Message}");
+            SimpleCoroutine.Create().Delay(5, LoadRewarded);
         }
     }
 
-    private void OnInterstitialClosed(object sender, EventArgs e)
+    public partial class UnityAdsProviderWithMeditation
     {
-        DebugIfCan($"Unity - Interstitial Closed");
-        LoadInterstitial();
-    }
 
-    private void OnInterstitialFailedLoad(object sender, LoadErrorEventArgs e)
-    {
-        DebugIfCan($"Unity - Interstitial Fail To Load - {e.Message}");
+        public bool IsInterstitialAvailable()
+        {
+            return _interstitialAd?.AdState == AdState.Loaded;
+        }
 
-        SimpleCoroutine.Create().Delay(5,LoadInterstitial);
-    }
 
-    private void OnInterstitialLoaded(object sender, EventArgs e)
-    {
-        DebugIfCan($"Unity - Interstitial Ads Loaded");
+        public void ShowInterstitial()
+        {
+            if (!IsInterstitialAvailable())
+            {
+                throw new InvalidOperationException();
+            }
+
+            _interstitialAd.ShowAsync();
+        }
+
+        private async void LoadInterstitial()
+        {
+            _interstitialAd = MediationService.Instance.CreateInterstitialAd(_interstitialId);
+            _interstitialAd.OnLoaded += OnInterstitialLoaded;
+            _interstitialAd.OnFailedLoad += OnInterstitialFailedLoad;
+            _interstitialAd.OnClosed += OnInterstitialClosed;
+            try
+            {
+                await _interstitialAd.LoadAsync();
+            }
+            catch (Exception e)
+            {
+                Console.WriteLine(e);
+            }
+        }
+
+        private void OnInterstitialClosed(object sender, EventArgs e)
+        {
+            DebugIfCan($"Unity - Interstitial Closed");
+            LoadInterstitial();
+        }
+
+        private void OnInterstitialFailedLoad(object sender, LoadErrorEventArgs e)
+        {
+            DebugIfCan($"Unity - Interstitial Fail To Load - {e.Message}");
+
+            SimpleCoroutine.Create().Delay(5, LoadInterstitial);
+        }
+
+        private void OnInterstitialLoaded(object sender, EventArgs e)
+        {
+            DebugIfCan($"Unity - Interstitial Ads Loaded");
+        }
     }
 }
 #endif
