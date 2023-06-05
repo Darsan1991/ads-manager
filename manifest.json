@@ -1,0 +1,10 @@
+{
+    "name": "com.dgames.adsmanager",
+    "version": "1.0.0",
+    "displayName": "Ads Manager",
+    "description": "Provide Ads Features for game",
+    "dependencies": {
+        "com.dgames.udebug" : "git+https://github.com/Darsan1991/udebug.git"
+    }
+
+}
