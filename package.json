@@ -11,6 +11,14 @@
     },
     "dependencies": {
         
-    }
+    },
+    "samples": [
+        {
+            "displayName": "Consent",
+            "description": "Consent Panel",
+            "path": "Samples~/Consent"
+        }
+        
+    ]
 
 }
