@@ -1,0 +1,16 @@
+{
+    "name": "com.dgames.adsmanager.editor",
+    "rootNamespace": "",
+    "references": [
+        "GUID:41a8017b5341641bcac276e65c363875"
+    ],
+    "includePlatforms": [],
+    "excludePlatforms": [],
+    "allowUnsafeCode": false,
+    "overrideReferences": false,
+    "precompiledReferences": [],
+    "autoReferenced": true,
+    "defineConstraints": [],
+    "versionDefines": [],
+    "noEngineReferences": false
+}

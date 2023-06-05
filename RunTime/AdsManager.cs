@@ -33,12 +33,6 @@ namespace DGames.Ads
             set => PrefManager.SetBool(nameof(EnableAds),value);
         }
 
-        protected override void OnAwake()
-        {
-            base.OnAwake();
-            Services.Register<IAdsManager>(this);
-        }
-
 
         void Start()
         {
