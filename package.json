@@ -10,7 +10,7 @@
         "url" : ""
     },
     "dependencies": {
-        "com.dgames.udebug" : "https://github.com/Darsan1991/udebug.git"
+        "com.dgames.udebug" : "https://github.com/Darsan1991/udebug.git#v1.0.0"
     },
     "samples": [
         {
