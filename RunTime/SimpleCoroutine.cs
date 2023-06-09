@@ -193,6 +193,17 @@ public class SimpleCoroutine : MonoBehaviour
             FinishAndDestroy(onFinished);
         }, speed));
     }
+    
+    public IEnumerator MoveTowards(AnimationCurve curve, Action<float> onCallOnFrame = null, Action onFinished = null,
+        float time = 1)
+    {
+        var start = curve.keys.Min(k=>k.time);
+        var end = curve.keys.Max(k=>k.time);
+        var speed = (end-start)/time;
+        
+        yield return MoveTowardsEnumerator(start, end, n => onCallOnFrame?.Invoke(curve.Evaluate(n)), speed: speed,
+            onFinished: onFinished);
+    }
 
     public void MoveTowardsAngle(float start = 0f, float end = 1f, Action<float> onCallOnFrame = null, Action onFinished = null,
         float speed = 1f)
@@ -354,6 +365,7 @@ public class SimpleCoroutine : MonoBehaviour
         }
         else
         {
+            // ReSharper disable once PossibleNullReferenceException
             simpleCoroutine = go.AddComponent<SimpleCoroutine>();
         }
         simpleCoroutine.AutoDestruct = autoDestruct;

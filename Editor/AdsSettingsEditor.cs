@@ -8,11 +8,7 @@ namespace DGames.Ads
     [CustomEditor(typeof(AdsSettings))]
     public class AdsSettingsEditor : Editor
     {
-   
-
-
-    
-
+        
         private readonly List<ISettingSegmentGUI> _segmentGuis = new();
 
         private void OnEnable()

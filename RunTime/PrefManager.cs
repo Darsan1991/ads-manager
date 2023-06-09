@@ -18,6 +18,11 @@ namespace DGames.Ads
 
         public static void RemoveKey(string key) => PlayerPrefs.DeleteKey(key);
 
+        public static void Set<T>(string key, T value)
+        {
+            
+        }
+
 
 #if UNITY_EDITOR
 
