@@ -1,6 +1,7 @@
 ﻿using System;
 using System.Collections.Generic;
 using System.Linq;
+using DGames.ObjectEssentials.Scriptable;
 using UnityEngine;
 using Random = UnityEngine.Random;
 
@@ -12,9 +13,9 @@ namespace DGames.Ads
     public partial class AdsManager : Singleton<AdsManager>, IAdsManager
     {
 
+        [SerializeField] private Value<bool> _isPremium;
         public bool Initialized { get; private set; }
-
-
+        
 
         public bool HaveSetupConsent => PrefManager.HasKey(nameof(ConsentActive));
 
@@ -26,15 +27,11 @@ namespace DGames.Ads
             get => PrefManager.GetBool(nameof(ConsentActive));
             set => PrefManager.SetBool(nameof(ConsentActive), value);
         }
-        
-        public bool EnableAds
-        {
-            get => PrefManager.GetBool(nameof(EnableAds),true);
-            set => PrefManager.SetBool(nameof(EnableAds),value);
-        }
+
+        public bool EnableAds => _isPremium;
 
 
-        void Start()
+        private void Start()
         {
             if (HaveSetupConsent || !AdsSettings.Default.ConsentSetting.enable)
                 Init();

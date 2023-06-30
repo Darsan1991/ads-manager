@@ -238,7 +238,6 @@ public class SimpleCoroutine : MonoBehaviour
 
             if (start < end && currentNormalized >= end || start > end && currentNormalized <= end)
             {
-
                 currentNormalized = end;
                 onCallOnFrame?.Invoke(currentNormalized);
                 break;
@@ -247,9 +246,7 @@ public class SimpleCoroutine : MonoBehaviour
             onCallOnFrame?.Invoke(currentNormalized);
             yield return null;
         }
-
         onFinished?.Invoke();
-
     }
 
     public static IEnumerator MoveTowardsAngleEnumerator(float start = 0f, float end = 1f, Action<float> onCallOnFrame = null, Action onFinished = null,

@@ -37,7 +37,6 @@ namespace DGames.Ads
     public partial class AdsSettings
     {
         public static AdsSettings Default => Resources.Load<AdsSettings>(nameof(AdsSettings));
-        public const string DEFAULT_NAME = nameof(AdsSettings);
 
         public const string MIN_AND_MAX_GAME_OVERS_BETWEEN_INTERSTITIAL_ADS_FIELD =
             nameof(_minAndMaxGameOversBetweenInterstitialAds);

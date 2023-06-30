@@ -827,7 +827,6 @@ namespace DGames.Ads
             var exceptList = exceptChildren?.ToList() ?? new List<string>();
 
             property = property.Copy();
-
             var parentDepth = property.depth;
             if (property.NextVisible(true) && parentDepth < property.depth)
             {
@@ -835,6 +834,7 @@ namespace DGames.Ads
                 {
                     if (exceptList.Contains(property.name))
                         continue;
+                    
                     EditorGUILayout.PropertyField(property, true);
                 } while (property.NextVisible(false) && parentDepth < property.depth);
             }
