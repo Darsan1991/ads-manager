@@ -28,7 +28,7 @@ namespace DGames.Ads
             set => PrefManager.SetBool(nameof(ConsentActive), value);
         }
 
-        public bool EnableAds => _premium.Item.Get();
+        public bool EnableAds => !_premium.Item.Get();
 
 
         private void Start()
