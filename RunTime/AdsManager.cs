@@ -13,7 +13,7 @@ namespace DGames.Ads
     public partial class AdsManager : Singleton<AdsManager>, IAdsManager
     {
 
-        [SerializeField] private Value<bool> _isPremium;
+        [SerializeField] private ValueField<bool> _premium = new("PREMIUM");
         public bool Initialized { get; private set; }
         
 
@@ -28,7 +28,7 @@ namespace DGames.Ads
             set => PrefManager.SetBool(nameof(ConsentActive), value);
         }
 
-        public bool EnableAds => _isPremium;
+        public bool EnableAds => _premium;
 
 
         private void Start()
