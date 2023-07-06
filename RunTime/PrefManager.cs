@@ -1,8 +1,8 @@
-﻿using UnityEditor;
-using UnityEngine;
+﻿using UnityEngine;
 
 namespace DGames.Ads
 {
+    // ReSharper disable once HollowTypeName
     public static class PrefManager
     {
         public static void SetInt(string key, int val) => PlayerPrefs.SetInt(key, val);
@@ -22,17 +22,6 @@ namespace DGames.Ads
         {
             
         }
-
-
-#if UNITY_EDITOR
-
-        [MenuItem("MyGames/Clear Prefs")]
-        public static void ClearPres()
-        {
-            PlayerPrefs.DeleteAll();
-        }
-
-#endif
 
     }
 }
