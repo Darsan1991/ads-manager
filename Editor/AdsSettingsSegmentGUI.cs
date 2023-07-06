@@ -1,6 +1,7 @@
 using System;
 using System.Collections;
 using System.Collections.Generic;
+using System.IO;
 using System.Linq;
 using System.Reflection;
 using UnityEditor;
@@ -49,14 +50,15 @@ namespace DGames.Ads
         {
             _adsSettings.ApplyModifiedProperties();
         }
-
     }
-    
+
     public class AdmobSettingsSegmentGUI : SettingSegmentSetGUIWithSymbols
     {
         private readonly SerializedProperty _iosAdmobSetting;
         private readonly AdmobPlatformSegmentGUI _androidSegmentGUI;
         private readonly AdmobPlatformSegmentGUI _iOSSegmentGUI;
+        private bool _removeButtonClicked;
+        private bool _importButtonClicked;
 
         public AdmobSettingsSegmentGUI(SerializedProperty iosAdmobSetting, SerializedProperty androidAdmobSetting) :
             base(
@@ -70,7 +72,21 @@ namespace DGames.Ads
         protected override void DrawGUI()
         {
             EditorGUILayout.BeginVertical(GUI.skin.box);
+            EditorGUILayout.BeginHorizontal();
             _iosAdmobSetting.isExpanded = EditorGUILayout.Foldout(_iosAdmobSetting.isExpanded, "Admob Setting");
+            var isBothDisable = settingSegmentGuis.OfType<AdmobPlatformSegmentGUI>().All(s => !s.EnableProperty.boolValue);
+            if (isBothDisable &&
+                IsPluginExist() && GUILayout.Button("Remove Admob Plugin", GUILayout.MaxWidth(150)))
+            {
+                _removeButtonClicked = true;
+            }
+            
+            if (!IsPluginExist() && GUILayout.Button("Import Admob Plugin", GUILayout.MaxWidth(150)))
+            {
+                _importButtonClicked = true;
+            }
+
+            EditorGUILayout.EndHorizontal();
 
             if (_iosAdmobSetting.isExpanded)
             {
@@ -79,6 +95,73 @@ namespace DGames.Ads
             }
 
             EditorGUILayout.EndVertical();
+
+            if (_removeButtonClicked)
+            {
+                _removeButtonClicked = false;
+                OnClickRemovePlugins();
+            }
+
+            if (_importButtonClicked)
+            {
+                _importButtonClicked = false;
+                OnClickImportPlugins();
+            }
+        }
+
+        private void OnClickImportPlugins()
+        {
+            var dataPath = Path.Combine(Application.dataPath);
+            var file = EditorUtility.OpenFilePanel("Admob Plugins",
+                Path.Combine(dataPath.Substring(0, dataPath.LastIndexOf(Path.DirectorySeparatorChar)),"UnityPackages"), ".unitypackage");
+
+            if (File.Exists(file))
+            {
+                AssetDatabase.ImportPackage(file,true);
+            }
+        }
+
+        private static void OnClickRemovePlugins()
+        {
+            if (!EditorUtility.DisplayDialog("Are You Sure?",
+                    "This will remove the plugin also remove android,ios folder inside plugins folder. You have to import plugin again before enable if you select yes.",
+                    "Yes", "No")) return;
+            var folders = new[]
+            {
+                "ExternalDependencyManager",
+                "GoogleMobileAds",
+                Path.Combine( "Plugins", "Android"),
+                Path.Combine( "Plugins", "iOS"),
+            };
+
+            DeleteFolders(folders);
+        }
+
+        private static void DeleteFolders(string[] folders)
+        {
+            foreach (var asset in AssetDatabase.FindAssets("", folders.Select(f => Path.Combine("Assets", f)).ToArray()))
+            {
+                var p = AssetDatabase.GUIDToAssetPath(asset);
+                AssetDatabase.DeleteAsset(p);
+            }
+
+            foreach (var path in folders.Select(p => $"{Path.Combine(Application.dataPath, p)}.meta").Where(File.Exists))
+            {
+                File.Delete(path);
+            }
+
+            foreach (var path in folders.Select(p => Path.Combine(Application.dataPath, p)).Where(Directory.Exists))
+            {
+                Directory.Delete(path);
+            }
+
+            AssetDatabase.SaveAssets();
+            AssetDatabase.Refresh();
+        }
+
+        private static bool IsPluginExist()
+        {
+            return Directory.Exists(Path.Combine(Application.dataPath, "GoogleMobileAds"));
         }
 
         protected override void ApplyModifiedProperties()
@@ -86,7 +169,7 @@ namespace DGames.Ads
             _iosAdmobSetting.serializedObject.ApplyModifiedProperties();
         }
     }
-    
+
     public class UnitySettingsSegmentGUI : SettingSegmentSetGUIWithSymbols
     {
         private readonly SerializedProperty _iosSetting;
@@ -117,7 +200,7 @@ namespace DGames.Ads
             _iosSetting.serializedObject.ApplyModifiedProperties();
         }
     }
-    
+
     public class UnityPlatformSegmentGUI : SettingSegmentGUIWithSymbols
     {
         private readonly SerializedProperty _adsSetting;
@@ -190,9 +273,7 @@ namespace DGames.Ads
                 if (enable &&
                     ScriptingDefineSymbolHandler.HaveBuildSymbol(_group,
                         $"UNITY_ADS_{value}") != (value == sdkType)
-
                     ||
-
                     !enable && ScriptingDefineSymbolHandler.HaveBuildSymbol(_group, $"UNITY_ADS_{value}")
                    )
                     return true;
@@ -217,34 +298,37 @@ namespace DGames.Ads
             _adsSetting.serializedObject.ApplyModifiedProperties();
         }
     }
-    
-     public class AdmobPlatformSegmentGUI : SettingSegmentGUIWithSymbols
+
+    public class AdmobPlatformSegmentGUI : SettingSegmentGUIWithSymbols
     {
         private readonly BuildTargetGroup _group;
         private readonly string _title;
         private readonly SerializedProperty _admobSetting;
+        private readonly SerializedProperty _enableProperty;
+
+        public SerializedProperty EnableProperty => _enableProperty;
 
         public AdmobPlatformSegmentGUI(SerializedProperty admobSetting, string title, BuildTargetGroup group)
         {
             _group = group;
             _title = title;
             _admobSetting = admobSetting;
+            _enableProperty = _admobSetting.FindPropertyRelative(nameof(AdmobSetting.enable));
         }
 
         protected override void DrawGUI()
         {
             EditorGUILayout.BeginVertical(GUI.skin.box);
             EditorGUI.indentLevel++;
-            var enableProperty = _admobSetting.FindPropertyRelative(nameof(AdmobSetting.enable));
-            var enable = EditorGUILayout.Toggle(_title, enableProperty.boolValue);
+            var enable = EditorGUILayout.Toggle(_title, _enableProperty.boolValue);
 
-            if (enable != enableProperty.boolValue)
+            if (enable != _enableProperty.boolValue)
             {
-                enableProperty.boolValue = enable;
+                _enableProperty.boolValue = enable;
                 ScriptingDefineSymbolHandler.HandleScriptingSymbol(_group, enable, "ADMOB");
             }
 
-            if (enableProperty.boolValue)
+            if (_enableProperty.boolValue)
             {
                 EditorGUI.indentLevel++;
                 EditorGUILayout.HelpBox(
@@ -276,101 +360,101 @@ namespace DGames.Ads
             _admobSetting.serializedObject.ApplyModifiedProperties();
         }
     }
-     
-     public abstract class SettingSegmentSetGUIWithSymbols : SettingSegmentSetGUI, ISettingSegmentGUIWithSymbols
-     {
-         protected SettingSegmentSetGUIWithSymbols(params ISettingSegmentGUI[] segmentGuis) : base(segmentGuis)
-         {
-         }
 
-         public bool HasSymbolsProblem()
-         {
-             return settingSegmentGuis.OfType<ISettingSegmentGUIWithSymbols>().Any(s => s.HasSymbolsProblem());
-         }
+    public abstract class SettingSegmentSetGUIWithSymbols : SettingSegmentSetGUI, ISettingSegmentGUIWithSymbols
+    {
+        protected SettingSegmentSetGUIWithSymbols(params ISettingSegmentGUI[] segmentGuis) : base(segmentGuis)
+        {
+        }
 
-         public void FixSymbolsProblem()
-         {
-             foreach (var guiWithSymbols in settingSegmentGuis.OfType<ISettingSegmentGUIWithSymbols>()
-                          .Where(s => s.HasSymbolsProblem()))
-             {
-                 guiWithSymbols.FixSymbolsProblem();
-             }
-         }
-     }
-     
-     public abstract class SettingSegmentSetGUI : SettingSegmentGUI, IEnumerable<ISettingSegmentGUI>
-     {
-         protected readonly List<ISettingSegmentGUI> settingSegmentGuis;
+        public bool HasSymbolsProblem()
+        {
+            return settingSegmentGuis.OfType<ISettingSegmentGUIWithSymbols>().Any(s => s.HasSymbolsProblem());
+        }
 
+        public void FixSymbolsProblem()
+        {
+            foreach (var guiWithSymbols in settingSegmentGuis.OfType<ISettingSegmentGUIWithSymbols>()
+                         .Where(s => s.HasSymbolsProblem()))
+            {
+                guiWithSymbols.FixSymbolsProblem();
+            }
+        }
+    }
 
-         protected SettingSegmentSetGUI(params ISettingSegmentGUI[] segmentGuis)
-         {
-             settingSegmentGuis = segmentGuis.ToList();
-         }
+    public abstract class SettingSegmentSetGUI : SettingSegmentGUI, IEnumerable<ISettingSegmentGUI>
+    {
+        protected readonly List<ISettingSegmentGUI> settingSegmentGuis;
 
 
-         protected void DrawChildrenInOrder()
-         {
-             for (var index = 0; index < settingSegmentGuis.Count; index++)
-             {
-                 var settingSegmentGui = settingSegmentGuis[index];
-                 settingSegmentGui.OnGUI();
-                 if (index < settingSegmentGuis.Count - 2)
-                     DrawSpaceBetweenChildren();
-             }
-         }
+        protected SettingSegmentSetGUI(params ISettingSegmentGUI[] segmentGuis)
+        {
+            settingSegmentGuis = segmentGuis.ToList();
+        }
 
-         protected virtual void DrawSpaceBetweenChildren()
-         {
-         }
 
-         public IEnumerator<ISettingSegmentGUI> GetEnumerator()
-         {
-             return settingSegmentGuis.GetEnumerator();
-         }
+        protected void DrawChildrenInOrder()
+        {
+            for (var index = 0; index < settingSegmentGuis.Count; index++)
+            {
+                var settingSegmentGui = settingSegmentGuis[index];
+                settingSegmentGui.OnGUI();
+                if (index < settingSegmentGuis.Count - 2)
+                    DrawSpaceBetweenChildren();
+            }
+        }
 
-         IEnumerator IEnumerable.GetEnumerator()
-         {
-             return GetEnumerator();
-         }
-     }
-     public abstract class SettingSegmentGUI : ISettingSegmentGUI
-     {
-         public void OnGUI()
-         {
-             EditorGUI.BeginChangeCheck();
+        protected virtual void DrawSpaceBetweenChildren()
+        {
+        }
 
-             DrawGUI();
+        public IEnumerator<ISettingSegmentGUI> GetEnumerator()
+        {
+            return settingSegmentGuis.GetEnumerator();
+        }
 
-             if (EditorGUI.EndChangeCheck())
-             {
-                 ApplyModifiedProperties();
-             }
+        IEnumerator IEnumerable.GetEnumerator()
+        {
+            return GetEnumerator();
+        }
+    }
 
-         }
+    public abstract class SettingSegmentGUI : ISettingSegmentGUI
+    {
+        public void OnGUI()
+        {
+            EditorGUI.BeginChangeCheck();
 
-         protected abstract void ApplyModifiedProperties();
-         protected abstract void DrawGUI();
-     }
-     
-     public interface ISettingSegmentGUI
-     {
-         void OnGUI();
-     }
-     
-     public abstract class SettingSegmentGUIWithSymbols : SettingSegmentGUI, ISettingSegmentGUIWithSymbols
-     {
-         public abstract bool HasSymbolsProblem();
-         public abstract void FixSymbolsProblem();
-     }
-     
-     public interface ISettingSegmentGUIWithSymbols : ISettingSegmentGUI
-     {
-         bool HasSymbolsProblem();
-         void FixSymbolsProblem();
-     }
-     
-      public class ConsentSegmentGUI : SettingSegmentGUI
+            DrawGUI();
+
+            if (EditorGUI.EndChangeCheck())
+            {
+                ApplyModifiedProperties();
+            }
+        }
+
+        protected abstract void ApplyModifiedProperties();
+        protected abstract void DrawGUI();
+    }
+
+    public interface ISettingSegmentGUI
+    {
+        void OnGUI();
+    }
+
+    public abstract class SettingSegmentGUIWithSymbols : SettingSegmentGUI, ISettingSegmentGUIWithSymbols
+    {
+        public abstract bool HasSymbolsProblem();
+        public abstract void FixSymbolsProblem();
+    }
+
+    public interface ISettingSegmentGUIWithSymbols : ISettingSegmentGUI
+    {
+        bool HasSymbolsProblem();
+        void FixSymbolsProblem();
+    }
+
+    public class ConsentSegmentGUI : SettingSegmentGUI
     {
         private readonly SerializedProperty _consentSetting;
 
@@ -412,350 +496,352 @@ namespace DGames.Ads
         }
     }
 
-   
-    
+
     public static class SerializePropertyExtensions
-{
-    public static IEnumerable<T> ToValueEnumerable<T>(this SerializedProperty property)
     {
-        if (!property.isArray)
+        public static IEnumerable<T> ToValueEnumerable<T>(this SerializedProperty property)
         {
-            yield break;
-        }
-
-        foreach (var val in property.ToValueEnumerable(typeof(T)))
-        {
-            yield return val == null ? default(T) : (T)val;
-        }
-    }
-
-    public static IEnumerable<object> ToValueEnumerable(this SerializedProperty property, Type type)
-    {
-        if (!property.isArray)
-        {
-            yield break;
-        }
-
-        //        Debug.Log(nameof(ToValueEnumerable) + type.Name +" "+property.arraySize);
-        for (var i = 0; i < property.arraySize; i++)
-        {
-            var elementAtIndex = property.GetArrayElementAtIndex(i);
-            yield return elementAtIndex.ToObjectValue(type);
-        }
-    }
-
-    public static T ToObjectValue<T>(this SerializedProperty property)
-    {
-        var value = ToObjectValue(property, typeof(T));
-        return value == null ? default(T) : (T)value;
-    }
-
-    public static object ToObjectValue(this SerializedProperty property, Type type)
-    {
-        if (property.isArray && property.propertyType != SerializedPropertyType.String)
-            return null;
-
-        if (property.propertyType.IsBuildInSerializableField())
-        {
-            return GetBuildInFieldValue(property);
-        }
-
-        var instance = Activator.CreateInstance(type);
-        if (property.type != type.Name)
-        {
-            throw new InvalidOperationException($"Value MisMatched Property-{property.type} Type-{type.Name}");
-        }
-
-        foreach (var fieldInfo in type
-            .GetFields(BindingFlags.Public | BindingFlags.NonPublic | BindingFlags.Instance)
-            .Where(info => info.IsPublic ||
-                           info.CustomAttributes.Any(data => data.AttributeType == typeof(SerializeField))))
-        {
-            var fieldProperty = property.FindPropertyRelative(fieldInfo.Name);
-
-            var value = fieldProperty.isArray && fieldProperty.propertyType != SerializedPropertyType.String
-                ? fieldProperty.ToValueEnumerable(fieldInfo.FieldType.GetInterfaces()
-                        .First(t => t.IsGenericType && t.GetGenericTypeDefinition() == typeof(IEnumerable<>))
-                        .GenericTypeArguments[0])
-                    .ConvertToTypeEnumerable(fieldInfo.FieldType)
-                : fieldProperty.hasChildren && fieldProperty.propertyType != SerializedPropertyType.String
-                    ? fieldProperty.ToObjectValue(fieldInfo.FieldType)
-                    : GetBuildInFieldValue(fieldProperty);
-
-            fieldInfo.SetValue(instance, value);
-        }
-
-        return instance;
-    }
-
-
-    public static void SetObjectValue<T>(this SerializedProperty property, T value)
-    {
-        property.SetObjectValue(value, typeof(T));
-    }
-
-    public static void Foreach(this SerializedProperty property, Action<SerializedProperty> action)
-    {
-        if (!property.isArray)
-        {
-            throw new InvalidOperationException();
-        }
-
-        for (var i = 0; i < property.arraySize; i++)
-        {
-            action?.Invoke(property.GetArrayElementAtIndex(i));
-        }
-    }
-
-    public static IEnumerable<SerializedProperty> ToEnumerable(this SerializedProperty property)
-    {
-        if (!property.isArray)
-        {
-            throw new InvalidOperationException();
-        }
-
-        for (var i = 0; i < property.arraySize; i++)
-        {
-            yield return property.GetArrayElementAtIndex(i);
-        }
-    }
-
-    public static void SetObjectValue(this SerializedProperty property, object value, Type type)
-    {
-        //        Debug.Log(type.Name);
-        if (property.type.ToLower() != type.Name.ToLower())
-            throw new ArgumentException($"Type Mismatched Property Type:{property.type} Value Type:{type.Name}");
-
-        if (property.isArray && property.propertyType != SerializedPropertyType.String)
-        {
-            //            property.SetObjectValueEnumerable(value as IEnumerable,type);
-            return;
-        }
-
-        if (property.propertyType.IsBuildInSerializableField())
-        {
-            SetBuildInFieldValue(property, value);
-            return;
-        }
-
-        foreach (var fieldInfo in type
-            .GetFields(BindingFlags.Public | BindingFlags.NonPublic | BindingFlags.Instance)
-            .Where(info => info.IsPublic ||
-                           info.CustomAttributes.Any(data => data.AttributeType == typeof(SerializeField))))
-        {
-            var fieldProperty = property.FindPropertyRelative(fieldInfo.Name);
-            if (fieldProperty.isArray && fieldProperty.propertyType != SerializedPropertyType.String)
+            if (!property.isArray)
             {
-                fieldProperty.SetObjectValueEnumerable(
-                    fieldInfo.GetValue(value) as IEnumerable
-                    , fieldInfo.FieldType.GetInterfaces()
-                        .First(t => t.IsGenericType && t.GetGenericTypeDefinition() == typeof(IEnumerable<>))
-                        .GenericTypeArguments[0]);
+                yield break;
             }
-            else if (fieldProperty.hasChildren && fieldProperty.propertyType != SerializedPropertyType.String)
+
+            foreach (var val in property.ToValueEnumerable(typeof(T)))
             {
-                fieldProperty.SetObjectValue(fieldInfo.GetValue(value));
-            }
-            else
-            {
-                SetBuildInFieldValue(fieldProperty, fieldInfo.GetValue(value));
+                yield return val == null ? default(T) : (T)val;
             }
         }
-    }
 
-    public static void SetObjectValueEnumerable<T>(this SerializedProperty property, IEnumerable<T> value)
-    {
-        property.SetObjectValueEnumerable(value, typeof(T));
-    }
-
-    public static void SetObjectValueEnumerable(this SerializedProperty property, IEnumerable value, Type elementType)
-    {
-        property.ClearArray();
-        var i = 0;
-
-
-
-        foreach (var v in value)
+        public static IEnumerable<object> ToValueEnumerable(this SerializedProperty property, Type type)
         {
-            property.InsertArrayElementAtIndex(i);
-            property.GetArrayElementAtIndex(i).SetObjectValue(v, elementType);
-            i++;
-        }
-    }
+            if (!property.isArray)
+            {
+                yield break;
+            }
 
-    //    public static object ConvertToTypeList(this IEnumerable<object> list, Type type)
-    //    {
-    //        return list.Select(item => Convert.ChangeType(item, type)).ToList();
-    //    }
-
-    public static object ConvertToTypeEnumerable(this IEnumerable value, Type type)
-    {
-        var list = (IList)Activator.CreateInstance(type);
-        foreach (var item in value)
-        {
-            list.Add(item);
+            //        Debug.Log(nameof(ToValueEnumerable) + type.Name +" "+property.arraySize);
+            for (var i = 0; i < property.arraySize; i++)
+            {
+                var elementAtIndex = property.GetArrayElementAtIndex(i);
+                yield return elementAtIndex.ToObjectValue(type);
+            }
         }
 
-        return list;
-    }
-
-    private static object GetBuildInFieldValue(SerializedProperty property)
-    {
-        if (property.propertyType == SerializedPropertyType.Generic)
+        public static T ToObjectValue<T>(this SerializedProperty property)
         {
-            Debug.LogError("Invalid Property Field:" + property.propertyType);
-            return null;
+            var value = ToObjectValue(property, typeof(T));
+            return value == null ? default(T) : (T)value;
         }
 
-        switch (property.propertyType)
+        public static object ToObjectValue(this SerializedProperty property, Type type)
         {
-            case SerializedPropertyType.Integer:
-                return property.intValue;
-            case SerializedPropertyType.Boolean:
-                return property.boolValue;
-            case SerializedPropertyType.Float:
-                return property.floatValue;
-            case SerializedPropertyType.String:
-                return property.stringValue;
-            case SerializedPropertyType.Color:
-                return property.colorValue;
-            case SerializedPropertyType.ObjectReference:
-                return property.objectReferenceValue;
-            case SerializedPropertyType.LayerMask:
-                return property.intValue;
-            case SerializedPropertyType.Enum:
-                return property.enumValueIndex;
-            case SerializedPropertyType.Vector2:
-                return property.vector2Value;
-            case SerializedPropertyType.Vector3:
-                return property.vector3Value;
-            case SerializedPropertyType.Vector4:
-                return property.vector4Value;
-            case SerializedPropertyType.Rect:
-                return property.rectValue;
-            case SerializedPropertyType.ArraySize:
-                return property.arraySize;
-            case SerializedPropertyType.Character:
-                return property.stringValue;
-            case SerializedPropertyType.AnimationCurve:
-                return property.animationCurveValue;
-            case SerializedPropertyType.Bounds:
-                return property.boundsValue;
-            //            case SerializedPropertyType.Gradient:
-            //                return property.;
-            case SerializedPropertyType.Quaternion:
-                return property.quaternionValue;
-            case SerializedPropertyType.ExposedReference:
-                return property.exposedReferenceValue;
+            if (property.isArray && property.propertyType != SerializedPropertyType.String)
+                return null;
 
-            case SerializedPropertyType.FixedBufferSize:
-                return property.fixedBufferSize;
-            case SerializedPropertyType.Vector2Int:
-                return property.vector2IntValue;
-            case SerializedPropertyType.Vector3Int:
-                return property.vector3IntValue;
-            case SerializedPropertyType.RectInt:
-                return property.rectIntValue;
-            case SerializedPropertyType.BoundsInt:
-                return property.boundsIntValue;
-            default:
+            if (property.propertyType.IsBuildInSerializableField())
+            {
+                return GetBuildInFieldValue(property);
+            }
+
+            var instance = Activator.CreateInstance(type);
+            if (property.type != type.Name)
+            {
+                throw new InvalidOperationException($"Value MisMatched Property-{property.type} Type-{type.Name}");
+            }
+
+            foreach (var fieldInfo in type
+                         .GetFields(BindingFlags.Public | BindingFlags.NonPublic | BindingFlags.Instance)
+                         .Where(info => info.IsPublic ||
+                                        info.CustomAttributes.Any(data =>
+                                            data.AttributeType == typeof(SerializeField))))
+            {
+                var fieldProperty = property.FindPropertyRelative(fieldInfo.Name);
+
+                var value = fieldProperty.isArray && fieldProperty.propertyType != SerializedPropertyType.String
+                    ? fieldProperty.ToValueEnumerable(fieldInfo.FieldType.GetInterfaces()
+                            .First(t => t.IsGenericType && t.GetGenericTypeDefinition() == typeof(IEnumerable<>))
+                            .GenericTypeArguments[0])
+                        .ConvertToTypeEnumerable(fieldInfo.FieldType)
+                    : fieldProperty.hasChildren && fieldProperty.propertyType != SerializedPropertyType.String
+                        ? fieldProperty.ToObjectValue(fieldInfo.FieldType)
+                        : GetBuildInFieldValue(fieldProperty);
+
+                fieldInfo.SetValue(instance, value);
+            }
+
+            return instance;
+        }
+
+
+        public static void SetObjectValue<T>(this SerializedProperty property, T value)
+        {
+            property.SetObjectValue(value, typeof(T));
+        }
+
+        public static void Foreach(this SerializedProperty property, Action<SerializedProperty> action)
+        {
+            if (!property.isArray)
+            {
+                throw new InvalidOperationException();
+            }
+
+            for (var i = 0; i < property.arraySize; i++)
+            {
+                action?.Invoke(property.GetArrayElementAtIndex(i));
+            }
+        }
+
+        public static IEnumerable<SerializedProperty> ToEnumerable(this SerializedProperty property)
+        {
+            if (!property.isArray)
+            {
+                throw new InvalidOperationException();
+            }
+
+            for (var i = 0; i < property.arraySize; i++)
+            {
+                yield return property.GetArrayElementAtIndex(i);
+            }
+        }
+
+        public static void SetObjectValue(this SerializedProperty property, object value, Type type)
+        {
+            //        Debug.Log(type.Name);
+            if (property.type.ToLower() != type.Name.ToLower())
+                throw new ArgumentException($"Type Mismatched Property Type:{property.type} Value Type:{type.Name}");
+
+            if (property.isArray && property.propertyType != SerializedPropertyType.String)
+            {
+                //            property.SetObjectValueEnumerable(value as IEnumerable,type);
+                return;
+            }
+
+            if (property.propertyType.IsBuildInSerializableField())
+            {
+                SetBuildInFieldValue(property, value);
+                return;
+            }
+
+            foreach (var fieldInfo in type
+                         .GetFields(BindingFlags.Public | BindingFlags.NonPublic | BindingFlags.Instance)
+                         .Where(info => info.IsPublic ||
+                                        info.CustomAttributes.Any(data =>
+                                            data.AttributeType == typeof(SerializeField))))
+            {
+                var fieldProperty = property.FindPropertyRelative(fieldInfo.Name);
+                if (fieldProperty.isArray && fieldProperty.propertyType != SerializedPropertyType.String)
+                {
+                    fieldProperty.SetObjectValueEnumerable(
+                        fieldInfo.GetValue(value) as IEnumerable
+                        , fieldInfo.FieldType.GetInterfaces()
+                            .First(t => t.IsGenericType && t.GetGenericTypeDefinition() == typeof(IEnumerable<>))
+                            .GenericTypeArguments[0]);
+                }
+                else if (fieldProperty.hasChildren && fieldProperty.propertyType != SerializedPropertyType.String)
+                {
+                    fieldProperty.SetObjectValue(fieldInfo.GetValue(value));
+                }
+                else
+                {
+                    SetBuildInFieldValue(fieldProperty, fieldInfo.GetValue(value));
+                }
+            }
+        }
+
+        public static void SetObjectValueEnumerable<T>(this SerializedProperty property, IEnumerable<T> value)
+        {
+            property.SetObjectValueEnumerable(value, typeof(T));
+        }
+
+        public static void SetObjectValueEnumerable(this SerializedProperty property, IEnumerable value,
+            Type elementType)
+        {
+            property.ClearArray();
+            var i = 0;
+
+
+            foreach (var v in value)
+            {
+                property.InsertArrayElementAtIndex(i);
+                property.GetArrayElementAtIndex(i).SetObjectValue(v, elementType);
+                i++;
+            }
+        }
+
+        //    public static object ConvertToTypeList(this IEnumerable<object> list, Type type)
+        //    {
+        //        return list.Select(item => Convert.ChangeType(item, type)).ToList();
+        //    }
+
+        public static object ConvertToTypeEnumerable(this IEnumerable value, Type type)
+        {
+            var list = (IList)Activator.CreateInstance(type);
+            foreach (var item in value)
+            {
+                list.Add(item);
+            }
+
+            return list;
+        }
+
+        private static object GetBuildInFieldValue(SerializedProperty property)
+        {
+            if (property.propertyType == SerializedPropertyType.Generic)
+            {
                 Debug.LogError("Invalid Property Field:" + property.propertyType);
                 return null;
+            }
+
+            switch (property.propertyType)
+            {
+                case SerializedPropertyType.Integer:
+                    return property.intValue;
+                case SerializedPropertyType.Boolean:
+                    return property.boolValue;
+                case SerializedPropertyType.Float:
+                    return property.floatValue;
+                case SerializedPropertyType.String:
+                    return property.stringValue;
+                case SerializedPropertyType.Color:
+                    return property.colorValue;
+                case SerializedPropertyType.ObjectReference:
+                    return property.objectReferenceValue;
+                case SerializedPropertyType.LayerMask:
+                    return property.intValue;
+                case SerializedPropertyType.Enum:
+                    return property.enumValueIndex;
+                case SerializedPropertyType.Vector2:
+                    return property.vector2Value;
+                case SerializedPropertyType.Vector3:
+                    return property.vector3Value;
+                case SerializedPropertyType.Vector4:
+                    return property.vector4Value;
+                case SerializedPropertyType.Rect:
+                    return property.rectValue;
+                case SerializedPropertyType.ArraySize:
+                    return property.arraySize;
+                case SerializedPropertyType.Character:
+                    return property.stringValue;
+                case SerializedPropertyType.AnimationCurve:
+                    return property.animationCurveValue;
+                case SerializedPropertyType.Bounds:
+                    return property.boundsValue;
+                //            case SerializedPropertyType.Gradient:
+                //                return property.;
+                case SerializedPropertyType.Quaternion:
+                    return property.quaternionValue;
+                case SerializedPropertyType.ExposedReference:
+                    return property.exposedReferenceValue;
+
+                case SerializedPropertyType.FixedBufferSize:
+                    return property.fixedBufferSize;
+                case SerializedPropertyType.Vector2Int:
+                    return property.vector2IntValue;
+                case SerializedPropertyType.Vector3Int:
+                    return property.vector3IntValue;
+                case SerializedPropertyType.RectInt:
+                    return property.rectIntValue;
+                case SerializedPropertyType.BoundsInt:
+                    return property.boundsIntValue;
+                default:
+                    Debug.LogError("Invalid Property Field:" + property.propertyType);
+                    return null;
+            }
         }
-    }
 
-    private static void SetBuildInFieldValue(SerializedProperty property, object value)
-    {
-        if (property.hasChildren && property.propertyType != SerializedPropertyType.String)
+        private static void SetBuildInFieldValue(SerializedProperty property, object value)
         {
-            Debug.LogError("Invalid Property Field:" + property.propertyType);
-        }
-
-        switch (property.propertyType)
-        {
-            case SerializedPropertyType.Integer:
-                property.intValue = (int)value;
-                break;
-            case SerializedPropertyType.Boolean:
-                property.boolValue = (bool)value;
-                break;
-            case SerializedPropertyType.Float:
-                property.floatValue = (float)value;
-                break;
-            case SerializedPropertyType.String:
-                property.stringValue = (string)value;
-                break;
-            case SerializedPropertyType.Color:
-                property.colorValue = (Color)value;
-                break;
-            case SerializedPropertyType.ObjectReference:
-                property.objectReferenceValue = value as UnityEngine.Object;
-                break;
-            case SerializedPropertyType.LayerMask:
-                property.intValue = (int)value;
-                break;
-            case SerializedPropertyType.Enum:
-                property.enumValueIndex = (int)value;
-                break;
-            case SerializedPropertyType.Vector2:
-                property.vector2Value = (Vector2)value;
-                break;
-            case SerializedPropertyType.Vector3:
-                property.vector3Value = (Vector3)value;
-                break;
-            case SerializedPropertyType.Vector4:
-                property.vector4Value = (Vector4)value;
-                break;
-            case SerializedPropertyType.Rect:
-                property.rectValue = (Rect)value;
-                break;
-            case SerializedPropertyType.ArraySize:
-                property.arraySize = (int)value;
-                break;
-            case SerializedPropertyType.Character:
-                property.stringValue = (string)value;
-                break;
-            case SerializedPropertyType.AnimationCurve:
-                property.animationCurveValue = (AnimationCurve)value;
-                break;
-            case SerializedPropertyType.Bounds:
-                property.boundsValue = (Bounds)value;
-                break;
-            //            case SerializedPropertyType.Gradient:
-            //                return property.;
-            case SerializedPropertyType.Quaternion:
-                property.quaternionValue = (Quaternion)value;
-                break;
-            case SerializedPropertyType.ExposedReference:
-                property.exposedReferenceValue = value as UnityEngine.Object;
-                break;
-            //            case SerializedPropertyType.FixedBufferSize:
-            //                property.fixedBufferSize = value;
-            case SerializedPropertyType.Vector2Int:
-                property.vector2IntValue = (Vector2Int)value;
-                break;
-            case SerializedPropertyType.Vector3Int:
-                property.vector3IntValue = (Vector3Int)value;
-                break;
-            case SerializedPropertyType.RectInt:
-                property.rectIntValue = (RectInt)value;
-                break;
-            case SerializedPropertyType.BoundsInt:
-                property.boundsIntValue = (BoundsInt)value;
-                break;
-
-            default:
+            if (property.hasChildren && property.propertyType != SerializedPropertyType.String)
+            {
                 Debug.LogError("Invalid Property Field:" + property.propertyType);
-                break;
+            }
+
+            switch (property.propertyType)
+            {
+                case SerializedPropertyType.Integer:
+                    property.intValue = (int)value;
+                    break;
+                case SerializedPropertyType.Boolean:
+                    property.boolValue = (bool)value;
+                    break;
+                case SerializedPropertyType.Float:
+                    property.floatValue = (float)value;
+                    break;
+                case SerializedPropertyType.String:
+                    property.stringValue = (string)value;
+                    break;
+                case SerializedPropertyType.Color:
+                    property.colorValue = (Color)value;
+                    break;
+                case SerializedPropertyType.ObjectReference:
+                    property.objectReferenceValue = value as UnityEngine.Object;
+                    break;
+                case SerializedPropertyType.LayerMask:
+                    property.intValue = (int)value;
+                    break;
+                case SerializedPropertyType.Enum:
+                    property.enumValueIndex = (int)value;
+                    break;
+                case SerializedPropertyType.Vector2:
+                    property.vector2Value = (Vector2)value;
+                    break;
+                case SerializedPropertyType.Vector3:
+                    property.vector3Value = (Vector3)value;
+                    break;
+                case SerializedPropertyType.Vector4:
+                    property.vector4Value = (Vector4)value;
+                    break;
+                case SerializedPropertyType.Rect:
+                    property.rectValue = (Rect)value;
+                    break;
+                case SerializedPropertyType.ArraySize:
+                    property.arraySize = (int)value;
+                    break;
+                case SerializedPropertyType.Character:
+                    property.stringValue = (string)value;
+                    break;
+                case SerializedPropertyType.AnimationCurve:
+                    property.animationCurveValue = (AnimationCurve)value;
+                    break;
+                case SerializedPropertyType.Bounds:
+                    property.boundsValue = (Bounds)value;
+                    break;
+                //            case SerializedPropertyType.Gradient:
+                //                return property.;
+                case SerializedPropertyType.Quaternion:
+                    property.quaternionValue = (Quaternion)value;
+                    break;
+                case SerializedPropertyType.ExposedReference:
+                    property.exposedReferenceValue = value as UnityEngine.Object;
+                    break;
+                //            case SerializedPropertyType.FixedBufferSize:
+                //                property.fixedBufferSize = value;
+                case SerializedPropertyType.Vector2Int:
+                    property.vector2IntValue = (Vector2Int)value;
+                    break;
+                case SerializedPropertyType.Vector3Int:
+                    property.vector3IntValue = (Vector3Int)value;
+                    break;
+                case SerializedPropertyType.RectInt:
+                    property.rectIntValue = (RectInt)value;
+                    break;
+                case SerializedPropertyType.BoundsInt:
+                    property.boundsIntValue = (BoundsInt)value;
+                    break;
+
+                default:
+                    Debug.LogError("Invalid Property Field:" + property.propertyType);
+                    break;
+            }
+        }
+
+        public static bool IsBuildInSerializableField(this SerializedPropertyType type)
+        {
+            return type != SerializedPropertyType.ArraySize && type != SerializedPropertyType.Generic;
         }
     }
 
-    public static bool IsBuildInSerializableField(this SerializedPropertyType type)
-    {
-        return type != SerializedPropertyType.ArraySize && type != SerializedPropertyType.Generic;
-    }
-}
-    
+    // ReSharper disable once HollowTypeName
     public static class ScriptingDefineSymbolHandler
     {
         public static bool HaveBuildSymbol(BuildTargetGroup group, string symbol)
@@ -766,6 +852,7 @@ namespace DGames.Ads
             return strings.Contains(symbol);
         }
 
+        // ReSharper disable once FlagArgument
         public static void AddBuildSymbol(BuildTargetGroup group, string symbol)
         {
             if (HaveBuildSymbol(group, symbol))
@@ -782,6 +869,7 @@ namespace DGames.Ads
             PlayerSettings.SetScriptingDefineSymbolsForGroup(group, str);
         }
 
+        // ReSharper disable once FlagArgument
         public static void RemoveBuildSymbol(BuildTargetGroup group, string symbol)
         {
             if (!HaveBuildSymbol(group, symbol))
@@ -798,6 +886,7 @@ namespace DGames.Ads
             PlayerSettings.SetScriptingDefineSymbolsForGroup(group, str);
         }
 
+        // ReSharper disable once FlagArgument
         public static void HandleScriptingSymbol(BuildTargetGroup buildTargetGroup, bool enable, string key)
         {
             var scriptingDefineSymbolsForGroup = PlayerSettings.GetScriptingDefineSymbolsForGroup(buildTargetGroup);
@@ -816,11 +905,9 @@ namespace DGames.Ads
             PlayerSettings.SetScriptingDefineSymbolsForGroup(buildTargetGroup, string.Join(";", strings.Distinct()));
         }
     }
-    
+
     public static class EditorExtensions
     {
-
-
         public static void DrawChildrenDefault(this SerializedProperty property,
             params string[] exceptChildren)
         {
@@ -834,11 +921,10 @@ namespace DGames.Ads
                 {
                     if (exceptList.Contains(property.name))
                         continue;
-                    
+
                     EditorGUILayout.PropertyField(property, true);
                 } while (property.NextVisible(false) && parentDepth < property.depth);
             }
         }
     }
-
 }
