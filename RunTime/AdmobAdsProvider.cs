@@ -117,6 +117,8 @@ namespace DGames.Ads
             _interstitialAd.LoadAd(request);
         }
     }
+    
+    #if UNITY_EDITOR
 
     public static class AdmobExtensions
     {
@@ -148,6 +150,8 @@ namespace DGames.Ads
             AssetDatabase.Refresh();
         }
     }
+    
+    #endif
 }
 
 #endif
