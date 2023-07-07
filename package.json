@@ -10,8 +10,8 @@
         "url" : ""
     },
     "dependencies": {
-        "com.dgames.udebug" : "git+https://github.com/Darsan1991/udebug.git",
-        "com.dgames.objectessentials": "https://github.com/Darsan1991/object-essential.git"
+        "com.dgames.udebug" : "git+https://github.com/Darsan1991/udebug.git#v1.0.0",
+        "com.dgames.objectessentials": "https://github.com/Darsan1991/object-essential.git#v1.0.0"
     },
     "samples": [
         {
