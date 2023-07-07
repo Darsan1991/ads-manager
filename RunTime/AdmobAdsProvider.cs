@@ -1,7 +1,14 @@
 #if ADMOB
 using System;
+using System.IO;
+using System.Linq;
 using GoogleMobileAds.Api;
 using DGames.DDebug;
+
+#if UNITY_EDITOR
+using UnityEditor;
+using UnityEngine;
+#endif
 
 namespace DGames.Ads
 {
@@ -108,6 +115,37 @@ namespace DGames.Ads
 
             var request = new AdRequest.Builder().Build();
             _interstitialAd.LoadAd(request);
+        }
+    }
+
+    public static class AdmobExtensions
+    {
+        [MenuItem("Assets/External Dependency Manager/"+nameof(DeletePluginsFolder))]
+        public static void DeletePluginsFolder()
+        {
+            DeleteFolders(new []{"Plugins/Android","Plugins/iOS"});
+        }
+        
+        private static void DeleteFolders(string[] folders)
+        {
+            foreach (var asset in AssetDatabase.FindAssets("", folders.Select(f => Path.Combine("Assets", f)).ToArray()))
+            {
+                var p = AssetDatabase.GUIDToAssetPath(asset);
+                AssetDatabase.DeleteAsset(p);
+            }
+
+            foreach (var path in folders.Select(p => $"{Path.Combine(Application.dataPath, p)}.meta").Where(File.Exists))
+            {
+                File.Delete(path);
+            }
+
+            foreach (var path in folders.Select(p => Path.Combine(Application.dataPath, p)).Where(Directory.Exists))
+            {
+                Directory.Delete(path);
+            }
+
+            AssetDatabase.SaveAssets();
+            AssetDatabase.Refresh();
         }
     }
 }
