@@ -67,6 +67,7 @@ public partial class LegacyUnityAdsProvider
             throw new InvalidOperationException();
         }
 
+_rewardAdsAvailable = false;
         _rewardedVideoAdsCallback = completed;
         Advertisement.Show(_rewardedId,this);
     }
@@ -96,6 +97,7 @@ public partial class LegacyUnityAdsProvider
     private void OnRewardedAdsLoaded()
     {
         DebugIfCan($"Unity - Reward Ads Loaded");
+        _rewardAdsAvailable = true;
     }
 
     private void OnRewardedAdsFailedLoad(string message)

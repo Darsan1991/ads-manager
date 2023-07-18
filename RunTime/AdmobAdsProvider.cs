@@ -116,7 +116,7 @@ namespace DGames.Ads
             var request = new AdRequest.Builder().Build();
             _interstitialAd.LoadAd(request);
         }
-    }
+    }x
     
     #if UNITY_EDITOR
 
