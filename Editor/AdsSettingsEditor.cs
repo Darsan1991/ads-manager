@@ -5,7 +5,7 @@ using UnityEngine;
 
 namespace DGames.Ads
 {
-    [CustomEditor(typeof(AdsSettings))]
+    // [CustomEditor(typeof(AdsSettings))]
     public class AdsSettingsEditor : Editor
     {
         

@@ -1,18 +1,66 @@
 using System;
+using DGames.Essentials.Attributes;
+using DGames.Essentials.Unity;
 using UnityEngine;
 
 namespace DGames.Ads
 {
+    [DashboardMessage("You can setup full Ads settings here. Check for appropriate tabs for settings")]
+    [DashboardResourceItem(path: "Settings")]
     public partial class AdsSettings : ScriptableObject
     {
-        
-        [SerializeField] private Vector2Int _minAndMaxGameOversBetweenInterstitialAds;
-        [SerializeField] private AdmobSetting _iosAdmobSetting;
-        [SerializeField] private AdmobSetting _androidAdmobSetting;
-        [SerializeField] private UnityAdsSetting _iosUnityAdsSetting;
-        [SerializeField] private UnityAdsSetting _androidUnityAdsSetting;
-        [SerializeField] private ConsentSetting _consentSetting;
-        
+
+        [Tab("Basic", isDefault: true, allowAll: true)] [SerializeField]
+        private Vector2Int _minAndMaxGameOversBetweenInterstitialAds;
+
+
+        [Tab("Admob")]
+        [HelpBox("Admob Settings")]
+        [Box]
+        [ScriptableSymbolsToggle(nameof(AdmobSetting.enable), "ADMOB", BuildTargetGroup.Android)]
+        [ToggleGroup(nameof(AdmobSetting.enable), name: "Android", true)]
+        [NoLabel()]
+        [UseTab(nameof(AdmobSetting.enable))]
+        [SerializeField]
+        private AdmobSetting _androidAdmobSetting;
+
+        [Tab("Admob")]
+        [Box]
+        [ScriptableSymbolsToggle(nameof(AdmobSetting.enable), "ADMOB", BuildTargetGroup.iOS)]
+        [ToggleGroup(nameof(AdmobSetting.enable), name: "iOS", true)]
+        [NoLabel()]
+        [UseTab(nameof(AdmobSetting.enable))]
+        [SerializeField]
+        private AdmobSetting _iosAdmobSetting;
+
+
+        [Tab("Unity")]
+        [HelpBox("Unity Ads Settings")]
+        [Box]
+        [ScriptableSymbolsEnum(nameof(UnityAdsSetting.sdkType), typeof(UnityAdsSdkType), "UNITY_ADS_",
+            BuildTargetGroup.Android, nameof(UnityAdsSetting.enable))]
+        [ToggleGroup(nameof(UnityAdsSetting.enable), name: "Android", true)]
+        [NoLabel()]
+        [UseTab(nameof(UnityAdsSetting.enable))]
+        [SerializeField]
+        private UnityAdsSetting _androidUnityAdsSetting;
+
+        [Tab("Unity")]
+        [Box]
+        // [ScriptableSymbolsEnum(nameof(UnityAdsSetting.sdkType), typeof(UnityAdsSdkType), "UNITY_ADS_",
+        //     BuildTargetGroup.iOS, nameof(UnityAdsSetting.enable))]
+        [NoLabel()]
+        [ToggleGroup(nameof(UnityAdsSetting.enable), name: "iOS", true)]
+        [UseTab(nameof(UnityAdsSetting.enable))]
+        [SerializeField]
+        private UnityAdsSetting _iosUnityAdsSetting;
+
+        [Tab("Consent")]
+        [HelpBox("Enable/Disable Consent Panel Show Up at Start.")]
+        [ToggleGroup(nameof(Ads.ConsentSetting.enable), "Consent")]
+        [SerializeField]
+        private ConsentSetting _consentSetting;
+
         public Vector2Int MinAndMaxGameOversBetweenInterstitialAds => _minAndMaxGameOversBetweenInterstitialAds;
 
         public AdmobSetting IOSAdmobSetting => _iosAdmobSetting;
@@ -47,49 +95,55 @@ namespace DGames.Ads
         public const string ANDROID_UNITY_ADS_SETTING_FIELD = nameof(_androidUnityAdsSetting);
         public const string CONSENT_SETTINGS_FIELD = nameof(_consentSetting);
     }
-    
+
     [Serializable]
-    public class AdmobSetting:AdsProviderSettings
+    public class AdmobSetting : AdsProviderSettings
     {
         public bool enable;
-        public string interstitialId;
-    
+        [Tab("Ids", isDefault: true)] public string interstitialId;
 
-        public string admobRewardedId;
+        [Tab("Ids")] public string admobRewardedId;
 
         public override string Id => "ADMOB";
     }
-    
-    
+
+
     [Serializable]
     public abstract class AdsProviderSettings
     {
         public abstract string Id { get; }
-        [Tooltip("This ads will be select with in other Ads provider ads(Unity,Admob) based on priority. Higher priority will higher change to select.")]
+
+        [Tooltip(
+            "This ads will be select with in other Ads provider ads(Unity,Admob) based on priority. Higher priority will higher change to select.")]
+        [Tab("Priority")]
         public float interstitialPriority;
-        [Tooltip("This ads will be select with in other Ads provider ads(Unity,Admob) based on priority. Higher priority will higher change to select.")]
+
+        [Tooltip(
+            "This ads will be select with in other Ads provider ads(Unity,Admob) based on priority. Higher priority will higher change to select.")]
+        [Tab("Priority")]
         public float rewardedPriority;
 
-        public bool debug;
+        [Tab("Debug")] public bool debug;
     }
 
     [Serializable]
-    public class UnityAdsSetting:AdsProviderSettings
+    public class UnityAdsSetting : AdsProviderSettings
     {
         public bool enable;
-        public UnityAdsSdkType sdkType;
-        public string appId;
-        public string interstitialId;
-        public string rewardedId;
-        public bool testMode;
+        [Tab("Basic")] public UnityAdsSdkType sdkType;
+        [Tab("Ids", isDefault: true)] public string appId;
+        [Tab("Ids")] public string interstitialId;
+        [Tab("Ids")] public string rewardedId;
+        [Tab("Debug", "", 200000000)] public bool testMode;
         public override string Id => "UNITY";
     }
 
     public enum UnityAdsSdkType
     {
-        WITH_MEDITATION, LEGACY
+        WITH_MEDITATION,
+        LEGACY
     }
-    
+
     [Serializable]
     public struct ConsentSetting
     {
