@@ -40,6 +40,8 @@ namespace DGames.Ads
             try
             {
                 await AdmobConsent.GatherConsent(_debug);
+                if (!AdmobConsent.CanRequestAds) return;
+                
                 MobileAds.Initialize(_ =>
                 {
                     RequestInterstitial();
