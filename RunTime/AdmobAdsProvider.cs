@@ -191,7 +191,11 @@ namespace DGames.Ads
                     return;
                 }
 
-                if (CanRequestAds) return;
+                if (CanRequestAds)
+                {
+                    tcs.SetResult(true);
+                    return;
+                }
 
                 await LoadAndShowConsentIfRequired();
                 tcs.SetResult(true);
