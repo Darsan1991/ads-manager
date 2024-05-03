@@ -10,6 +10,7 @@ namespace DGames.Ads
 {
     // ReSharper disable once HollowTypeName
 
+    [AddComponentMenu("Ads/Ads Manager")]
     public partial class AdsManager : Singleton<AdsManager>, IAdsManager
     {
 
@@ -17,23 +18,22 @@ namespace DGames.Ads
         public bool Initialized { get; private set; }
         
 
-        public bool HaveSetupConsent => PrefManager.HasKey(nameof(ConsentActive));
+        // public bool HaveSetupConsent => PrefManager.HasKey(nameof(ConsentActive));
 
         // ReSharper disable once CollectionNeverUpdated.Local
         private readonly Dictionary<IAdsProvider, AdsProviderSettings> _providerVsSettings = new();
 
-        public bool ConsentActive
-        {
-            get => PrefManager.GetBool(nameof(ConsentActive));
-            set => PrefManager.SetBool(nameof(ConsentActive), value);
-        }
+        // public bool ConsentActive
+        // {
+        //     get => PrefManager.GetBool(nameof(ConsentActive));
+        //     set => PrefManager.SetBool(nameof(ConsentActive), value);
+        // }
 
         public bool EnableAds => !_premium.Item.Get();
 
 
         private void Start()
         {
-            if (HaveSetupConsent || !AdsSettings.Default.ConsentSetting.enable)
                 Init();
 
         }
@@ -233,8 +233,8 @@ namespace DGames.Ads
 
     public interface IAdsManager : IInitializable
     {
-        bool HaveSetupConsent { get; }
-        bool ConsentActive { get; set; }
+        // bool HaveSetupConsent { get; }
+        // bool ConsentActive { get; set; }
         void ShowOrPassInterstitialIfCan(out bool showing);
         void PassInterstitialIfCan();
         bool IsInterstitialAvailable(string providerId = null);

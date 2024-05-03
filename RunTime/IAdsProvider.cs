@@ -3,6 +3,9 @@ using UnityEngine;
 
 public interface IAdsProvider
 {
+    
+    
+    
     bool IsInterstitialAvailable();
     bool IsRewardedAvailable();
 

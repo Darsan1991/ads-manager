@@ -6,6 +6,7 @@ using UnityEngine;
 namespace DGames.Ads
 {
     [DashboardMessage("You can setup full Ads settings here. Check for appropriate tabs for settings")]
+    [HideScriptField]
     [DashboardResourceItem(path: "Settings")]
     public partial class AdsSettings : ScriptableObject
     {
@@ -55,11 +56,11 @@ namespace DGames.Ads
         [SerializeField]
         private UnityAdsSetting _iosUnityAdsSetting;
 
-        [Tab("Consent")]
-        [HelpBox("Enable/Disable Consent Panel Show Up at Start.")]
-        [ToggleGroup(nameof(Ads.ConsentSetting.enable), "Consent")]
-        [SerializeField]
-        private ConsentSetting _consentSetting;
+        // [Tab("Consent")]
+        // [HelpBox("Enable/Disable Consent Panel Show Up at Start.")]
+        // [ToggleGroup(nameof(Ads.ConsentSetting.enable), "Consent")]
+        // [SerializeField]
+        // private ConsentSetting _consentSetting;
 
         public Vector2Int MinAndMaxGameOversBetweenInterstitialAds => _minAndMaxGameOversBetweenInterstitialAds;
 
@@ -71,7 +72,7 @@ namespace DGames.Ads
 
         public UnityAdsSetting AndroidUnityAdsSetting => _androidUnityAdsSetting;
 
-        public ConsentSetting ConsentSetting => _consentSetting;
+        // public ConsentSetting ConsentSetting => _consentSetting;
 
 #if UNITY_EDITOR
         [UnityEditor.MenuItem("MyGames/Settings/AdsSettings")]
@@ -93,7 +94,7 @@ namespace DGames.Ads
         public const string ANDROID_ADMOB_SETTING_FIELD = nameof(_androidAdmobSetting);
         public const string IOS_UNITY_ADS_SETTING_FIELD = nameof(_iosUnityAdsSetting);
         public const string ANDROID_UNITY_ADS_SETTING_FIELD = nameof(_androidUnityAdsSetting);
-        public const string CONSENT_SETTINGS_FIELD = nameof(_consentSetting);
+        // public const string CONSENT_SETTINGS_FIELD = nameof(_consentSetting);
     }
 
     [Serializable]

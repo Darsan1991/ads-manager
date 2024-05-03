@@ -74,13 +74,14 @@ public class SimpleCoroutine : MonoBehaviour
         }
         completed?.Invoke();
     }
+    
+    
 
     public static IEnumerator DelayEnumerator(float delay, Action onFinished = null)
     {
         yield return new WaitForSeconds(delay);
         onFinished?.Invoke();
     }
-
     public void LerpNormalized(Action<float> onCallOnFrame, Action onFinished = null,
                                float lerpSpeed = 1f, float startNormalized = 0f,
                                float targetNormalized = 1.1f)
@@ -88,6 +89,7 @@ public class SimpleCoroutine : MonoBehaviour
         StartCoroutine(LerpNormalizedEnumerator(onCallOnFrame, () =>
         {
             FinishAndDestroy(onFinished);
+            
         }, lerpSpeed, startNormalized, targetNormalized));
     }
 
