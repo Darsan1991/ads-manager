@@ -233,6 +233,12 @@ namespace DGames.Ads
         {
             DeleteFolders(new []{"Plugins/Android","Plugins/iOS"});
         }
+
+        [MenuItem("My Games/Reset Consent")]
+        public static void ResetConsent()
+        {
+            ConsentInformation.Reset();
+        }
         
         private static void DeleteFolders(string[] folders)
         {
